@@ -10,6 +10,8 @@ GV（General Visualizer）は、プログラミングコンテストなどで手
 
 https://www.youtube.com/watch?v=LloGlY0smpA
 
+https://www.youtube.com/watch?v=bWVPhEuFSYw
+
 基本的な考え方
 --------------
 
@@ -169,3 +171,11 @@ OPERATIONは、半角スペース区切りです。
 :TCO14MR3S W H  
 画像加工命令「:TCO14MR3S」： Top Coder Open 2014 Marathon Round 3 の問題で使われた画像拡大縮小方式にて、現在の画像のサイズを幅W高さHへと変換します。
 
+LICENSE
+-------
+
+The MIT License (MIT)
+
+Copyright (c) 2015 colun ( Yasunobu Imamura )
+
+詳しくは付属のLICENSEファイルをお読み下さい。
