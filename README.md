@@ -46,11 +46,11 @@ nextCanvas();
 java -jar gvc.jar [.gvファイル]  
 .gvファイルの指定がない場合は、sample.gvを読み込みます。
 
-java -jar gvc.jar --server [PORT]  
+java -jar gvc.jar -server [PORT]
 サーバーモードで起動。指定したポート番号にてTCP接続を待つ。デフォルトポート番号は11111。
 接続元からの.gvファイルフォーマットのリクエストにて、動作する。  
 
-java -jar gvc.jar --client HOST [PORT]  
+java -jar gvc.jar -client HOST [PORT]
 クライアントモードで起動。HOSTへとTCP接続。デフォルトポート番号は11112。
 接続先からの.gvファイルフォーマットのレスポンスにて、動作する。
 
