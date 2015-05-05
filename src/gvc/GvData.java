@@ -462,7 +462,12 @@ public class GvData {
 							double y = Double.parseDouble(tokens[2]);
 							int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
 							double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
-							String text = 6<=tokens.length ? tokens[5] : "?";
+							StringBuilder sb = new StringBuilder();
+							for(int i = 5; i < tokens.length; ++i) {
+								sb.append(tokens[i]);
+								sb.append(" ");
+							}
+							String text = sb.length() > 0 ? sb.toString() : "?";
 							result.addItem(new GvSnapItem_Text(x, y, color, r, text));
 						}
 						else if("b".equals(type)) {//bitmap(image)
