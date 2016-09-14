@@ -6,6 +6,8 @@
  */
 package gvc;
 
+import java.awt.Dimension;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -22,6 +24,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+
+import javax.imageio.ImageIO;
+
+import com.sun.prism.Graphics;
 
 public class GvData {
 	private final static Charset utf8 = Charset.forName("UTF-8");
@@ -48,6 +54,74 @@ public class GvData {
 	private double nowTime;
 	private int inputCount = 0;
 	private int autoModeCount = 0;
+
+	private byte[] rafBuf = new byte[65536];
+	private long rafFP = 0;
+	private int rafOff = 0;
+	private int rafEnd = 0;
+	private boolean rafEof = false;
+	private boolean rafRF = false;
+	private void seekMy(long fp) throws IOException {
+		rafOff = 0;
+		rafEnd = 0;
+		rafEof = false;
+		rafRF = false;
+		rafFP = fp;
+		raf.seek(fp);
+	}
+	private long getMyFilePointer() throws IOException {
+		if(rafRF && rafOff<rafEnd && rafBuf[rafOff]==10) {
+			++rafOff;
+		}
+		return rafFP - rafEnd + rafOff;
+	}
+	private String readMyLine() throws IOException {
+		int len = rafEnd-rafOff;
+		if(!rafEof && len<32768) {
+			for(int i=0; i<len; ++i) {
+				rafBuf[i] = rafBuf[rafOff+i];
+			}
+			rafOff = 0;
+			rafEnd = len;
+			int ret = raf.read(rafBuf, len, rafBuf.length-len);
+			if(ret==-1) {
+				rafEof = true;
+			}
+			else {
+				rafEnd += ret;
+				rafFP += ret;
+			}
+		}
+		int si = rafOff;
+		int i;
+		for(i=rafOff; i<rafEnd; ++i) {
+			byte b = rafBuf[i];
+			if(b==13) {
+				rafOff = i + 1;
+				rafRF = true;
+				break;
+			}
+			else if(b==10) {
+				if(rafRF && i==rafOff) {
+					si = i+1;
+					rafRF = false;
+					continue;
+				}
+				rafOff = i + 1;
+				rafRF = false;
+				break;
+			}
+		}
+		if(i==rafEnd) {
+			rafOff = i;
+			rafRF = false;
+		}
+		if(si==rafEnd && rafEof) {
+			return null;
+		}
+		String ret =  new String(rafBuf, si, i-si);
+		return ret;
+	}
 	public void hook(GvPanel panel) {
 		synchronized (this) {
 			hookSet.add(panel);
@@ -290,13 +364,13 @@ public class GvData {
 		writer = null;
 		double maxTime = Double.MIN_VALUE;
 		double nowTime = 0;
-		Long lastPos = raf.getFilePointer();
+		Long lastPos = getMyFilePointer();
 		double miX = Double.MAX_VALUE;
 		double miY = Double.MAX_VALUE;
 		double mxX = Double.MIN_VALUE;
 		double mxY = Double.MIN_VALUE;
 		while(true) {
-			String line = raf.readLine();
+			String line = readMyLine();
 			if(line==null) {
 				break;
 			}
@@ -398,7 +472,7 @@ public class GvData {
 					else {
 						nowTime = Math.max(0, maxTime + 1);
 					}
-					lastPos = raf.getFilePointer();
+					lastPos = getMyFilePointer();
 				}
 			}
 		}
@@ -417,9 +491,9 @@ public class GvData {
 			assert(posList!=null);
 			GvSnap result = new GvSnap(d, minX, minY, maxX, maxY);
 			for (Long pos : posList) {
-				raf.seek(pos);
+				seekMy(pos);
 				while(true) {
-					String line = raf.readLine();
+					String line = readMyLine();
 					if(line==null) {
 						break;
 					}
@@ -490,6 +564,42 @@ public class GvData {
 				}
 			}
 			return result;
+		}
+	}
+	public void outputImage(String prefix, int maxWidth, int maxHeight) throws IOException {
+		GvGraphics gvGraphics = new GvGraphics();
+		Set<Double> keys = snapMap.keySet();
+		for(Double d : keys) {
+			GvSnap nowSnap = getSnap(d);
+			if(nowSnap==null) {
+				continue;
+			}
+			double width = Math.max(1, maxWidth);
+			double height = Math.max(1, maxHeight);
+			double dx = nowSnap.maxX - nowSnap.minX;
+			double dy = nowSnap.maxY - nowSnap.minY;
+			double maxD = Math.max(dx, dy);
+			double scale;
+			double sx;
+			double sy;
+			if(dx*height < dy*width) {
+				scale = height/dy;
+				width = dx * scale;
+			}
+			else {
+				scale = width/dx;
+				height = dy * scale;
+			}
+			int intWidth = Math.max((int)Math.ceil(width), 1);
+			int intHeight = Math.max((int)Math.ceil(height), 1);
+
+			BufferedImage bi = new BufferedImage(intWidth, intHeight, BufferedImage.TYPE_INT_ARGB);
+			gvGraphics.begin(intWidth, intHeight, scale, -nowSnap.minX, -nowSnap.minY);
+			nowSnap.paint(gvGraphics, 256.0);
+			gvGraphics.end(bi.getGraphics());
+			File file = new File(keys.size()==1 ? prefix + ".png" : String.format("%s.%f.png", prefix, d));
+			ImageIO.write(bi, "png", file);
+			System.out.println(file.getName());
 		}
 	}
 }
