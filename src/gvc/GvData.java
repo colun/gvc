@@ -599,7 +599,6 @@ public class GvData {
 			gvGraphics.end(bi.getGraphics());
 			File file = new File(keys.size()==1 ? prefix + ".png" : String.format("%s.%f.png", prefix, d));
 			ImageIO.write(bi, "png", file);
-			System.out.println(file.getName());
 		}
 	}
 }

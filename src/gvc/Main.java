@@ -33,7 +33,6 @@ public class Main {
 				name = name.substring(0, name.length()-3);
 			}
 			data.outputImage(3<=args.length ? args[2] : name, 1024, 1024);
-			System.out.println("Hello");
 		}
 		else {
 			GvData data = new GvData(1<=args.length ? args[0] : "sample.gv");
