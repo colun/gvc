@@ -16,12 +16,14 @@ public class GvSnapItem_Text implements GvSnapItem {
 	Color color;
 	double r;
 	String text;
-	public GvSnapItem_Text(double x, double y, int color, double r, String text) {
+	int align;
+	public GvSnapItem_Text(double x, double y, int color, double r, String text, int align) {
 		this.x = x;
 		this.y = y;
 		this.color = new Color((color>>16)&255, (color>>8)&255, color&255);
 		this.r = r;
 		this.text = text;
+		this.align = align;
 	}
 	@Override
 	public double getMinX() {
@@ -46,7 +48,15 @@ public class GvSnapItem_Text implements GvSnapItem {
 		Font font = new Font(null, Font.CENTER_BASELINE, (int)Math.round(r*2*scale));
 		g.g.setFont(font);
 		Rectangle2D rect = font.getStringBounds(text, g.g.getFontRenderContext());
-		g.g.drawString(text, (int)Math.round(x*scale-rect.getCenterX()), (int)Math.round(y*scale-rect.getCenterY()));
+		if(align==0) {
+			g.g.drawString(text, (int)Math.round(x*scale-rect.getCenterX()), (int)Math.round(y*scale-rect.getCenterY()));
+		}
+		else if(0<align) {
+			g.g.drawString(text, (int)Math.round(x*scale-rect.getMinX()), (int)Math.round(y*scale-rect.getCenterY()));
+		}
+		else {
+			g.g.drawString(text, (int)Math.round(x*scale-rect.getMaxX()), (int)Math.round(y*scale-rect.getCenterY()));
+		}
 		g.g.setFont(beforeFont);
 	}
 	@Override

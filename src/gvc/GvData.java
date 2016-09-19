@@ -290,6 +290,32 @@ public class GvData {
 						maxX = Math.max(maxX, x+r);
 						maxY = Math.max(maxY, y+r);
 					}
+					else if("tl".equals(type)) {//text left
+						if(nowBeginPos==null) {
+							nowBeginPos = nowPos;
+						}
+						assert(3<=tokens.length);
+						double x = Double.parseDouble(tokens[1]);
+						double y = Double.parseDouble(tokens[2]);
+						double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
+						minX = Math.min(minX, x);
+						minY = Math.min(minY, y-r);
+						maxX = Math.max(maxX, x+r+r);
+						maxY = Math.max(maxY, y+r);
+					}
+					else if("tr".equals(type)) {//text right
+						if(nowBeginPos==null) {
+							nowBeginPos = nowPos;
+						}
+						assert(3<=tokens.length);
+						double x = Double.parseDouble(tokens[1]);
+						double y = Double.parseDouble(tokens[2]);
+						double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
+						minX = Math.min(minX, x-r-r);
+						minY = Math.min(minY, y-r);
+						maxX = Math.max(maxX, x);
+						maxY = Math.max(maxY, y+r);
+					}
 					else if("b".equals(type)) {//bitmap(image)
 						if(nowBeginPos==null) {
 							nowBeginPos = nowPos;
@@ -440,6 +466,36 @@ public class GvData {
 					mxX = Math.max(mxX, x+r);
 					mxY = Math.max(mxY, y+r);
 				}
+				else if("tl".equals(type)) {//text left
+					if(lastPos!=null) {
+						addSnapPos(nowTime, lastPos);
+						lastPos = null;
+						maxTime = Math.max(maxTime, nowTime);
+					}
+					assert(3<=tokens.length);
+					double x = Double.parseDouble(tokens[1]);
+					double y = Double.parseDouble(tokens[2]);
+					double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
+					miX = Math.min(miX, x);
+					miY = Math.min(miY, y-r);
+					mxX = Math.max(mxX, x+r+r);
+					mxY = Math.max(mxY, y+r);
+				}
+				else if("tr".equals(type)) {//text right
+					if(lastPos!=null) {
+						addSnapPos(nowTime, lastPos);
+						lastPos = null;
+						maxTime = Math.max(maxTime, nowTime);
+					}
+					assert(3<=tokens.length);
+					double x = Double.parseDouble(tokens[1]);
+					double y = Double.parseDouble(tokens[2]);
+					double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
+					miX = Math.min(miX, x-r-r);
+					miY = Math.min(miY, y-r);
+					mxX = Math.max(mxX, x);
+					mxY = Math.max(mxY, y+r);
+				}
 				else if("b".equals(type)) {//bitmap(image)
 					if(lastPos!=null) {
 						addSnapPos(nowTime, lastPos);
@@ -542,7 +598,35 @@ public class GvData {
 								sb.append(" ");
 							}
 							String text = sb.length() > 0 ? sb.toString() : "?";
-							result.addItem(new GvSnapItem_Text(x, y, color, r, text));
+							result.addItem(new GvSnapItem_Text(x, y, color, r, text, 0));
+						}
+						else if("tl".equals(type)) {//text left
+							assert(3<=tokens.length);
+							double x = Double.parseDouble(tokens[1]);
+							double y = Double.parseDouble(tokens[2]);
+							int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
+							double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
+							StringBuilder sb = new StringBuilder();
+							for(int i = 5; i < tokens.length; ++i) {
+								sb.append(tokens[i]);
+								sb.append(" ");
+							}
+							String text = sb.length() > 0 ? sb.toString() : "?";
+							result.addItem(new GvSnapItem_Text(x, y, color, r, text, 1));
+						}
+						else if("tr".equals(type)) {//text right
+							assert(3<=tokens.length);
+							double x = Double.parseDouble(tokens[1]);
+							double y = Double.parseDouble(tokens[2]);
+							int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
+							double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
+							StringBuilder sb = new StringBuilder();
+							for(int i = 5; i < tokens.length; ++i) {
+								sb.append(tokens[i]);
+								sb.append(" ");
+							}
+							String text = sb.length() > 0 ? sb.toString() : "?";
+							result.addItem(new GvSnapItem_Text(x, y, color, r, text, -1));
 						}
 						else if("b".equals(type)) {//bitmap(image)
 							assert(5<=tokens.length);
