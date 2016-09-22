@@ -21,11 +21,11 @@ public class GvSnapItem_Output implements GvSnapItem {
 	}
 	@Override
 	public double getMaxX() {
-		return Double.MIN_VALUE;
+		return -Double.MAX_VALUE;
 	}
 	@Override
 	public double getMaxY() {
-		return Double.MIN_VALUE;
+		return -Double.MAX_VALUE;
 	}
 	@Override
 	public void paint(GvGraphics g, double scale) {

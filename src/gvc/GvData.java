@@ -354,8 +354,8 @@ public class GvData {
 		savedPos = nowPos = 0;
 		savedBeginPos = nowBeginPos = null;
 		savedMinX = savedMinY = minX = minY = Double.MAX_VALUE;
-		savedMaxX = savedMaxY = maxX = maxY = Double.MIN_VALUE;
-		savedMaxTime = maxTime = Double.MIN_VALUE;
+		savedMaxX = savedMaxY = maxX = maxY = -Double.MAX_VALUE;
+		savedMaxTime = maxTime = -Double.MAX_VALUE;
 		savedTime = nowTime = 0;
 	}
 	public GvData(final Socket socket) throws IOException {
@@ -388,13 +388,13 @@ public class GvData {
 		raf = new RandomAccessFile(path, "r");
 		socket = null;
 		writer = null;
-		double maxTime = Double.MIN_VALUE;
+		double maxTime = -Double.MAX_VALUE;
 		double nowTime = 0;
 		Long lastPos = getMyFilePointer();
 		double miX = Double.MAX_VALUE;
 		double miY = Double.MAX_VALUE;
-		double mxX = Double.MIN_VALUE;
-		double mxY = Double.MIN_VALUE;
+		double mxX = -Double.MAX_VALUE;
+		double mxY = -Double.MAX_VALUE;
 		while(true) {
 			String line = readMyLine();
 			if(line==null) {
