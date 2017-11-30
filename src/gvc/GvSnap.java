@@ -34,11 +34,11 @@ public class GvSnap {
 		}
 	}
 	public void output() {
-		System.out.printf("<time %f>\n", time);
+		System.err.printf("<time %f>\n", time);
 		for(GvSnapItem item : items) {
 			item.output();
 		}
-		System.out.println("</time>");
+		System.err.println("</time>");
 	}
 
 }

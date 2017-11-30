@@ -27,8 +27,6 @@ import java.util.TreeMap;
 
 import javax.imageio.ImageIO;
 
-import com.sun.prism.Graphics;
-
 public class GvData {
 	private final static Charset utf8 = Charset.forName("UTF-8");
 	private final Map<Double, List<Long>> snapMap;
@@ -362,14 +360,14 @@ public class GvData {
 		snapMap = new TreeMap<Double, List<Long>>();
 		raf = new RandomAccessFile(File.createTempFile("gvsocket_", ".gv"), "rw");
 		this.socket = socket;
-		this.writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+		this.writer = new BufferedWriter(new OutputStreamWriter(socket!=null ? socket.getOutputStream() : System.out));
 		rollbackAll();
 		final GvData self = this;
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				try {
-					BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+					BufferedReader reader = new BufferedReader(new InputStreamReader(socket!=null ? socket.getInputStream() : System.in));
 					while(true) {
 						String line = reader.readLine();
 						if(line==null) {

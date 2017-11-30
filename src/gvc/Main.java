@@ -26,6 +26,10 @@ public class Main {
 			GvData data = new GvData(socket);
 			GvPanel.newWindow(data);
 		}
+		else if(1<=args.length && "-pipe".equals(args[0])) {
+			GvData data = new GvData((Socket)null);
+			GvPanel.newWindow(data);
+		}
 		else if(1<=args.length && "-image".equals(args[0])) {
 			String name = 2<=args.length ? args[1] : "sample.gv";
 			GvData data = new GvData(name);

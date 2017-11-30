@@ -32,6 +32,6 @@ public class GvSnapItem_Output implements GvSnapItem {
 	}
 	@Override
 	public void output() {
-		System.out.println(output);
+		System.err.println(output);
 	}
 }
