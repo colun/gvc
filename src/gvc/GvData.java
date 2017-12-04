@@ -66,14 +66,14 @@ public class GvData {
 				assert(3<=tokens.length);
 				double x = Double.parseDouble(tokens[1]);
 				double y = Double.parseDouble(tokens[2]);
-				int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
+				int color = 4<=tokens.length ? (int)Long.parseLong(tokens[3]) : 0;
 				double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
 				return new GvSnapItem_Circle(x, y, color, r);
 			}
 			else if("p".equals(type)) {//polygon
 				assert(6<=tokens.length);
 				assert(tokens.length%2==0);
-				int color = Integer.parseInt(tokens[1]);
+				int color = (int)Long.parseLong(tokens[1]);
 				int ei = tokens.length/2-1;
 				double[] x = new double[ei];
 				double[] y = new double[ei];
@@ -89,14 +89,14 @@ public class GvData {
 				double y1 = Double.parseDouble(tokens[2]);
 				double x2 = Double.parseDouble(tokens[3]);
 				double y2 = Double.parseDouble(tokens[4]);
-				int color = 6<=tokens.length ? Integer.parseInt(tokens[5]) : 0;
+				int color = 6<=tokens.length ? (int)Long.parseLong(tokens[5]) : 0;
 				return new GvSnapItem_Line(x1, y1, x2, y2, color);
 			}
 			else if("t".equals(type)) {//text
 				assert(3<=tokens.length);
 				double x = Double.parseDouble(tokens[1]);
 				double y = Double.parseDouble(tokens[2]);
-				int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
+				int color = 4<=tokens.length ? (int)Long.parseLong(tokens[3]) : 0;
 				double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
 				StringBuilder sb = new StringBuilder();
 				for(int i = 5; i < tokens.length; ++i) {
@@ -110,7 +110,7 @@ public class GvData {
 				assert(3<=tokens.length);
 				double x = Double.parseDouble(tokens[1]);
 				double y = Double.parseDouble(tokens[2]);
-				int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
+				int color = 4<=tokens.length ? (int)Long.parseLong(tokens[3]) : 0;
 				double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
 				StringBuilder sb = new StringBuilder();
 				for(int i = 5; i < tokens.length; ++i) {
@@ -124,7 +124,7 @@ public class GvData {
 				assert(3<=tokens.length);
 				double x = Double.parseDouble(tokens[1]);
 				double y = Double.parseDouble(tokens[2]);
-				int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
+				int color = 4<=tokens.length ? (int)Long.parseLong(tokens[3]) : 0;
 				double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
 				StringBuilder sb = new StringBuilder();
 				for(int i = 5; i < tokens.length; ++i) {
