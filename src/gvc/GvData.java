@@ -59,6 +59,97 @@ public class GvData {
 	private int rafEnd = 0;
 	private boolean rafEof = false;
 	private boolean rafRF = false;
+	private static GvSnapItem buildSnapItem(String line, String[] tokens) throws IOException {
+		if(1<=tokens.length) {
+			String type = tokens[0];
+			if("c".equals(type)) {//circle
+				assert(3<=tokens.length);
+				double x = Double.parseDouble(tokens[1]);
+				double y = Double.parseDouble(tokens[2]);
+				int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
+				double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
+				return new GvSnapItem_Circle(x, y, color, r);
+			}
+			else if("p".equals(type)) {//polygon
+				assert(6<=tokens.length);
+				assert(tokens.length%2==0);
+				int color = Integer.parseInt(tokens[1]);
+				int ei = tokens.length/2-1;
+				double[] x = new double[ei];
+				double[] y = new double[ei];
+				for(int i=0; i<ei; ++i) {
+					x[i] = Double.parseDouble(tokens[i+i+2]);
+					y[i] = Double.parseDouble(tokens[i+i+3]);
+				}
+				return new GvSnapItem_Polygon(x, y, color);
+			}
+			else if("l".equals(type)) {//line
+				assert(5<=tokens.length);
+				double x1 = Double.parseDouble(tokens[1]);
+				double y1 = Double.parseDouble(tokens[2]);
+				double x2 = Double.parseDouble(tokens[3]);
+				double y2 = Double.parseDouble(tokens[4]);
+				int color = 6<=tokens.length ? Integer.parseInt(tokens[5]) : 0;
+				return new GvSnapItem_Line(x1, y1, x2, y2, color);
+			}
+			else if("t".equals(type)) {//text
+				assert(3<=tokens.length);
+				double x = Double.parseDouble(tokens[1]);
+				double y = Double.parseDouble(tokens[2]);
+				int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
+				double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
+				StringBuilder sb = new StringBuilder();
+				for(int i = 5; i < tokens.length; ++i) {
+					sb.append(tokens[i]);
+					sb.append(" ");
+				}
+				String text = sb.length() > 0 ? sb.toString() : "?";
+				return new GvSnapItem_Text(x, y, color, r, text, 0);
+			}
+			else if("tl".equals(type)) {//text left
+				assert(3<=tokens.length);
+				double x = Double.parseDouble(tokens[1]);
+				double y = Double.parseDouble(tokens[2]);
+				int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
+				double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
+				StringBuilder sb = new StringBuilder();
+				for(int i = 5; i < tokens.length; ++i) {
+					sb.append(tokens[i]);
+					sb.append(" ");
+				}
+				String text = sb.length() > 0 ? sb.toString() : "?";
+				return new GvSnapItem_Text(x, y, color, r, text, 1);
+			}
+			else if("tr".equals(type)) {//text right
+				assert(3<=tokens.length);
+				double x = Double.parseDouble(tokens[1]);
+				double y = Double.parseDouble(tokens[2]);
+				int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
+				double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
+				StringBuilder sb = new StringBuilder();
+				for(int i = 5; i < tokens.length; ++i) {
+					sb.append(tokens[i]);
+					sb.append(" ");
+				}
+				String text = sb.length() > 0 ? sb.toString() : "?";
+				return new GvSnapItem_Text(x, y, color, r, text, -1);
+			}
+			else if("b".equals(type)) {//bitmap(image)
+				assert(5<=tokens.length);
+				double x = Double.parseDouble(tokens[1]) - 0.5;
+				double y = Double.parseDouble(tokens[2]) - 0.5;
+				double w = Double.parseDouble(tokens[3]);
+				double h = Double.parseDouble(tokens[4]);
+				String[] imageInfo = Arrays.copyOfRange(tokens, 5, tokens.length);
+				return new GvSnapItem_Image(x, y, w, h, imageInfo);
+			}
+			else if("o".equals(type)) {//output
+				String output = 2<=tokens.length ? line.substring(2) : "";
+				return new GvSnapItem_Output(output);
+			}
+		}
+		return null;
+	}
 	private void seekMy(long fp) throws IOException {
 		rafOff = 0;
 		rafEnd = 0;
@@ -233,106 +324,15 @@ public class GvData {
 					nowBeginPos = null;
 				}
 				else {
-					if("c".equals(type)) {//circle
+					GvSnapItem item = buildSnapItem(line, tokens);
+					if(item!=null) {
 						if(nowBeginPos==null) {
 							nowBeginPos = nowPos;
 						}
-						assert(3<=tokens.length);
-						double x = Double.parseDouble(tokens[1]);
-						double y = Double.parseDouble(tokens[2]);
-						double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
-						minX = Math.min(minX, x-r);
-						minY = Math.min(minY, y-r);
-						maxX = Math.max(maxX, x+r);
-						maxY = Math.max(maxY, y+r);
-					}
-					else if("p".equals(type)) {//polygon
-						if(nowBeginPos==null) {
-							nowBeginPos = nowPos;
-						}
-						assert(6<=tokens.length);
-						assert(tokens.length%2==0);
-						for(int i=2; i<tokens.length; i+=2) {
-							double x = Double.parseDouble(tokens[i]);
-							double y = Double.parseDouble(tokens[i+1]);
-							minX = Math.min(minX, x);
-							minY = Math.min(minY, y);
-							maxX = Math.max(maxX, x);
-							maxY = Math.max(maxY, y);
-						}
-					}
-					else if("l".equals(type)) {//line
-						if(nowBeginPos==null) {
-							nowBeginPos = nowPos;
-						}
-						assert(5<=tokens.length);
-						double x1 = Double.parseDouble(tokens[1]);
-						double y1 = Double.parseDouble(tokens[2]);
-						double x2 = Double.parseDouble(tokens[3]);
-						double y2 = Double.parseDouble(tokens[4]);
-						minX = Math.min(minX, Math.min(x1, x2));
-						minY = Math.min(minY, Math.min(y1, y2));
-						maxX = Math.max(maxX, Math.max(x1, x2));
-						maxY = Math.max(maxY, Math.max(y1, y2));
-					}
-					else if("t".equals(type)) {//text
-						if(nowBeginPos==null) {
-							nowBeginPos = nowPos;
-						}
-						assert(3<=tokens.length);
-						double x = Double.parseDouble(tokens[1]);
-						double y = Double.parseDouble(tokens[2]);
-						double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
-						minX = Math.min(minX, x-r);
-						minY = Math.min(minY, y-r);
-						maxX = Math.max(maxX, x+r);
-						maxY = Math.max(maxY, y+r);
-					}
-					else if("tl".equals(type)) {//text left
-						if(nowBeginPos==null) {
-							nowBeginPos = nowPos;
-						}
-						assert(3<=tokens.length);
-						double x = Double.parseDouble(tokens[1]);
-						double y = Double.parseDouble(tokens[2]);
-						double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
-						minX = Math.min(minX, x);
-						minY = Math.min(minY, y-r);
-						maxX = Math.max(maxX, x+r+r);
-						maxY = Math.max(maxY, y+r);
-					}
-					else if("tr".equals(type)) {//text right
-						if(nowBeginPos==null) {
-							nowBeginPos = nowPos;
-						}
-						assert(3<=tokens.length);
-						double x = Double.parseDouble(tokens[1]);
-						double y = Double.parseDouble(tokens[2]);
-						double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
-						minX = Math.min(minX, x-r-r);
-						minY = Math.min(minY, y-r);
-						maxX = Math.max(maxX, x);
-						maxY = Math.max(maxY, y+r);
-					}
-					else if("b".equals(type)) {//bitmap(image)
-						if(nowBeginPos==null) {
-							nowBeginPos = nowPos;
-						}
-						assert(5<=tokens.length);
-						double x = Double.parseDouble(tokens[1]) - 0.5;
-						double y = Double.parseDouble(tokens[2]) - 0.5;
-						double w = Double.parseDouble(tokens[3]);
-						double h = Double.parseDouble(tokens[4]);
-						assert(0<=w && 0<=h);
-						minX = Math.min(minX, x);
-						minY = Math.min(minY, y);
-						maxX = Math.max(maxX, x+w);
-						maxY = Math.max(maxY, y+h);
-					}
-					else if("o".equals(type)) {//output
-						if(nowBeginPos==null) {
-							nowBeginPos = nowPos;
-						}
+						minX = Math.min(minX, item.getMinX());
+						minY = Math.min(minY, item.getMinY());
+						maxX = Math.max(maxX, item.getMaxX());
+						maxY = Math.max(maxY, item.getMaxY());
 					}
 					raf.seek(nowPos);
 					raf.write(line.getBytes(utf8));
@@ -401,124 +401,7 @@ public class GvData {
 			String[] tokens = line.split(" ");
 			if(1<=tokens.length) {
 				String type = tokens[0];
-				if("c".equals(type)) {//circle
-					if(lastPos!=null) {
-						addSnapPos(nowTime, lastPos);
-						lastPos = null;
-						maxTime = Math.max(maxTime, nowTime);
-					}
-					assert(3<=tokens.length);
-					double x = Double.parseDouble(tokens[1]);
-					double y = Double.parseDouble(tokens[2]);
-					double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
-					miX = Math.min(miX, x-r);
-					miY = Math.min(miY, y-r);
-					mxX = Math.max(mxX, x+r);
-					mxY = Math.max(mxY, y+r);
-				}
-				else if("p".equals(type)) {//polygon
-					if(lastPos!=null) {
-						addSnapPos(nowTime, lastPos);
-						lastPos = null;
-						maxTime = Math.max(maxTime, nowTime);
-					}
-					assert(6<=tokens.length);
-					assert(tokens.length%2==0);
-					for(int i=2; i<tokens.length; i+=2) {
-						double x = Double.parseDouble(tokens[i]);
-						double y = Double.parseDouble(tokens[i+1]);
-						miX = Math.min(miX, x);
-						miY = Math.min(miY, y);
-						mxX = Math.max(mxX, x);
-						mxY = Math.max(mxY, y);
-					}
-				}
-				else if("l".equals(type)) {//line
-					if(lastPos!=null) {
-						addSnapPos(nowTime, lastPos);
-						lastPos = null;
-						maxTime = Math.max(maxTime, nowTime);
-					}
-					assert(5<=tokens.length);
-					double x1 = Double.parseDouble(tokens[1]);
-					double y1 = Double.parseDouble(tokens[2]);
-					double x2 = Double.parseDouble(tokens[3]);
-					double y2 = Double.parseDouble(tokens[4]);
-					miX = Math.min(miX, Math.min(x1, x2));
-					miY = Math.min(miY, Math.min(y1, y2));
-					mxX = Math.max(mxX, Math.max(x1, x2));
-					mxY = Math.max(mxY, Math.max(y1, y2));
-				}
-				else if("t".equals(type)) {//text
-					if(lastPos!=null) {
-						addSnapPos(nowTime, lastPos);
-						lastPos = null;
-						maxTime = Math.max(maxTime, nowTime);
-					}
-					assert(3<=tokens.length);
-					double x = Double.parseDouble(tokens[1]);
-					double y = Double.parseDouble(tokens[2]);
-					double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
-					miX = Math.min(miX, x-r);
-					miY = Math.min(miY, y-r);
-					mxX = Math.max(mxX, x+r);
-					mxY = Math.max(mxY, y+r);
-				}
-				else if("tl".equals(type)) {//text left
-					if(lastPos!=null) {
-						addSnapPos(nowTime, lastPos);
-						lastPos = null;
-						maxTime = Math.max(maxTime, nowTime);
-					}
-					assert(3<=tokens.length);
-					double x = Double.parseDouble(tokens[1]);
-					double y = Double.parseDouble(tokens[2]);
-					double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
-					miX = Math.min(miX, x);
-					miY = Math.min(miY, y-r);
-					mxX = Math.max(mxX, x+r+r);
-					mxY = Math.max(mxY, y+r);
-				}
-				else if("tr".equals(type)) {//text right
-					if(lastPos!=null) {
-						addSnapPos(nowTime, lastPos);
-						lastPos = null;
-						maxTime = Math.max(maxTime, nowTime);
-					}
-					assert(3<=tokens.length);
-					double x = Double.parseDouble(tokens[1]);
-					double y = Double.parseDouble(tokens[2]);
-					double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
-					miX = Math.min(miX, x-r-r);
-					miY = Math.min(miY, y-r);
-					mxX = Math.max(mxX, x);
-					mxY = Math.max(mxY, y+r);
-				}
-				else if("b".equals(type)) {//bitmap(image)
-					if(lastPos!=null) {
-						addSnapPos(nowTime, lastPos);
-						lastPos = null;
-						maxTime = Math.max(maxTime, nowTime);
-					}
-					assert(5<=tokens.length);
-					double x = Double.parseDouble(tokens[1]) - 0.5;
-					double y = Double.parseDouble(tokens[2]) - 0.5;
-					double w = Double.parseDouble(tokens[3]);
-					double h = Double.parseDouble(tokens[4]);
-					assert(0<=w && 0<=h);
-					miX = Math.min(miX, x);
-					miY = Math.min(miY, y);
-					mxX = Math.max(mxX, x+w);
-					mxY = Math.max(mxY, y+h);
-				}
-				else if("o".equals(type)) {//output
-					if(lastPos!=null) {
-						addSnapPos(nowTime, lastPos);
-						lastPos = null;
-						maxTime = Math.max(maxTime, nowTime);
-					}
-				}
-				else if("n".equals(type)) {//new
+				if("n".equals(type)) {//new
 					if(2<=tokens.length) {
 						nowTime = Double.parseDouble(tokens[1]);
 						maxTime = Math.max(maxTime, nowTime);
@@ -527,6 +410,20 @@ public class GvData {
 						nowTime = Math.max(0, maxTime + 1);
 					}
 					lastPos = getMyFilePointer();
+				}
+				else {
+					GvSnapItem item = buildSnapItem(line, tokens);
+					if(item!=null) {
+						if(lastPos!=null) {
+							addSnapPos(nowTime, lastPos);
+							lastPos = null;
+							maxTime = Math.max(maxTime, nowTime);
+						}
+						miX = Math.min(miX, item.getMinX());
+						miY = Math.min(miY, item.getMinY());
+						mxX = Math.max(mxX, item.getMaxX());
+						mxY = Math.max(mxY, item.getMaxY());
+					}
 				}
 			}
 		}
@@ -554,93 +451,14 @@ public class GvData {
 					String[] tokens = line.split(" ");
 					if(1<=tokens.length) {
 						String type = tokens[0];
-						if("c".equals(type)) {//circle
-							assert(3<=tokens.length);
-							double x = Double.parseDouble(tokens[1]);
-							double y = Double.parseDouble(tokens[2]);
-							int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
-							double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
-							result.addItem(new GvSnapItem_Circle(x, y, color, r));
-						}
-						else if("p".equals(type)) {//polygon
-							assert(6<=tokens.length);
-							assert(tokens.length%2==0);
-							int color = Integer.parseInt(tokens[1]);
-							int ei = tokens.length/2-1;
-							double[] x = new double[ei];
-							double[] y = new double[ei];
-							for(int i=0; i<ei; ++i) {
-								x[i] = Double.parseDouble(tokens[i+i+2]);
-								y[i] = Double.parseDouble(tokens[i+i+3]);
-							}
-							result.addItem(new GvSnapItem_Polygon(x, y, color));
-						}
-						else if("l".equals(type)) {//line
-							assert(5<=tokens.length);
-							double x1 = Double.parseDouble(tokens[1]);
-							double y1 = Double.parseDouble(tokens[2]);
-							double x2 = Double.parseDouble(tokens[3]);
-							double y2 = Double.parseDouble(tokens[4]);
-							int color = 6<=tokens.length ? Integer.parseInt(tokens[5]) : 0;
-							result.addItem(new GvSnapItem_Line(x1, y1, x2, y2, color));
-						}
-						else if("t".equals(type)) {//text
-							assert(3<=tokens.length);
-							double x = Double.parseDouble(tokens[1]);
-							double y = Double.parseDouble(tokens[2]);
-							int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
-							double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
-							StringBuilder sb = new StringBuilder();
-							for(int i = 5; i < tokens.length; ++i) {
-								sb.append(tokens[i]);
-								sb.append(" ");
-							}
-							String text = sb.length() > 0 ? sb.toString() : "?";
-							result.addItem(new GvSnapItem_Text(x, y, color, r, text, 0));
-						}
-						else if("tl".equals(type)) {//text left
-							assert(3<=tokens.length);
-							double x = Double.parseDouble(tokens[1]);
-							double y = Double.parseDouble(tokens[2]);
-							int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
-							double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
-							StringBuilder sb = new StringBuilder();
-							for(int i = 5; i < tokens.length; ++i) {
-								sb.append(tokens[i]);
-								sb.append(" ");
-							}
-							String text = sb.length() > 0 ? sb.toString() : "?";
-							result.addItem(new GvSnapItem_Text(x, y, color, r, text, 1));
-						}
-						else if("tr".equals(type)) {//text right
-							assert(3<=tokens.length);
-							double x = Double.parseDouble(tokens[1]);
-							double y = Double.parseDouble(tokens[2]);
-							int color = 4<=tokens.length ? Integer.parseInt(tokens[3]) : 0;
-							double r = 5<=tokens.length ? Double.parseDouble(tokens[4]) : 0.5;
-							StringBuilder sb = new StringBuilder();
-							for(int i = 5; i < tokens.length; ++i) {
-								sb.append(tokens[i]);
-								sb.append(" ");
-							}
-							String text = sb.length() > 0 ? sb.toString() : "?";
-							result.addItem(new GvSnapItem_Text(x, y, color, r, text, -1));
-						}
-						else if("b".equals(type)) {//bitmap(image)
-							assert(5<=tokens.length);
-							double x = Double.parseDouble(tokens[1]) - 0.5;
-							double y = Double.parseDouble(tokens[2]) - 0.5;
-							double w = Double.parseDouble(tokens[3]);
-							double h = Double.parseDouble(tokens[4]);
-							String[] imageInfo = Arrays.copyOfRange(tokens, 5, tokens.length);
-							result.addItem(new GvSnapItem_Image(x, y, w, h, imageInfo));
-						}
-						else if("o".equals(type)) {//output
-							String output = 2<=tokens.length ? line.substring(2) : "";
-							result.addItem(new GvSnapItem_Output(output));
-						}
-						else if("n".equals(type)) {//new
+						if("n".equals(type)) {//new
 							break;
+						}
+						else {
+							GvSnapItem item = buildSnapItem(line, tokens);
+							if(item!=null) {
+								result.addItem(item);
+							}
 						}
 					}
 				}

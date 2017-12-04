@@ -419,11 +419,14 @@ public class GvPanel extends JPanel implements ActionListener {
 		if(nowSnap==null) {
 			return;
 		}
+		double dx = nowSnap.maxX - nowSnap.minX;
+		double dy = nowSnap.maxY - nowSnap.minY;
+		if(dx<=0 || dy<=0) {
+			return;
+		}
 		Dimension dim = this.getSize();
 		double width = Math.max(1, dim.width);
 		double height = Math.max(1, dim.height);
-		double dx = nowSnap.maxX - nowSnap.minX;
-		double dy = nowSnap.maxY - nowSnap.minY;
 		double maxD = Math.max(dx, dy);
 		double scale;
 		double sx;

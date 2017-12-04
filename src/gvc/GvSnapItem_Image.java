@@ -20,12 +20,14 @@ public class GvSnapItem_Image implements GvSnapItem {
 	double height;
 	BufferedImage image;
 	char mode;
+	boolean backgroundFlag;
 	static TreeMap<String, BufferedImage> cache = new TreeMap<String, BufferedImage>();
 	public GvSnapItem_Image(double x, double y, double width, double height, String[] imageInfo) throws IOException {
 		this.x = x;
 		this.y = y;
 		this.width = width;
 		this.height = height;
+		this.backgroundFlag = false;
 		mode = ' ';
 		int pos = 0;
 		StringBuilder builder = new StringBuilder();
@@ -67,6 +69,9 @@ public class GvSnapItem_Image implements GvSnapItem {
 				else if(":B".equals(op)) {
 					mode = 'B';
 				}
+				else if(":BG".equals(op)) {
+					backgroundFlag = true;
+				}
 			}
 		}
 		image = cache.get(lastId);
@@ -74,19 +79,19 @@ public class GvSnapItem_Image implements GvSnapItem {
 	}
 	@Override
 	public double getMinX() {
-		return x;
+		return backgroundFlag ? Double.MAX_VALUE : x;
 	}
 	@Override
 	public double getMinY() {
-		return y;
+		return backgroundFlag ? Double.MAX_VALUE : y;
 	}
 	@Override
 	public double getMaxX() {
-		return x+width;
+		return backgroundFlag ? -Double.MAX_VALUE : x+width;
 	}
 	@Override
 	public double getMaxY() {
-		return y+height;
+		return backgroundFlag ? -Double.MAX_VALUE : y+height;
 	}
 	@Override
 	public void paint(GvGraphics g, double scale) {
