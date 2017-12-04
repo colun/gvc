@@ -20,7 +20,7 @@ public class GvSnapItem_Text implements GvSnapItem {
 	public GvSnapItem_Text(double x, double y, int color, double r, String text, int align) {
 		this.x = x;
 		this.y = y;
-		this.color = new Color((color>>16)&255, (color>>8)&255, color&255);
+		this.color = new Color((color>>16)&255, (color>>8)&255, color&255, 255 - (color>>24)&255);
 		this.r = r;
 		this.text = text;
 		this.align = align;

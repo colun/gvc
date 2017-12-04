@@ -19,7 +19,7 @@ public class GvSnapItem_Line implements GvSnapItem {
 		this.y1 = y1;
 		this.x2 = x2;
 		this.y2 = y2;
-		this.color = new Color((color>>16)&255, (color>>8)&255, color&255);
+		this.color = new Color((color>>16)&255, (color>>8)&255, color&255, 255 - (color>>24)&255);
 	}
 	@Override
 	public double getMinX() {

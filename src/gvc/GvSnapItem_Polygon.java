@@ -22,7 +22,7 @@ public class GvSnapItem_Polygon implements GvSnapItem {
 		this.y = y;
 		this.ix = new int[x.length];
 		this.iy = new int[y.length];
-		this.color = new Color((color>>16)&255, (color>>8)&255, color&255);
+		this.color = new Color((color>>16)&255, (color>>8)&255, color&255, 255 - (color>>24)&255);
 	}
 	@Override
 	public double getMinX() {

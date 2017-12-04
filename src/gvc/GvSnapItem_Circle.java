@@ -16,7 +16,7 @@ public class GvSnapItem_Circle implements GvSnapItem {
 	public GvSnapItem_Circle(double x, double y, int color, double r) {
 		this.x = x;
 		this.y = y;
-		this.color = new Color((color>>16)&255, (color>>8)&255, color&255);
+		this.color = new Color((color>>16)&255, (color>>8)&255, color&255, 255 - (color>>24)&255);
 		this.r = r;
 	}
 	@Override
