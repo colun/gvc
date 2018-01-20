@@ -323,6 +323,11 @@ public class GvData {
 					raf.write("n\n".getBytes(utf8));
 					nowBeginPos = null;
 				}
+				else if("f".equals(type)) {//flush
+					for(GvPanel panel : hookSet) {
+						panel.updateData(true);
+					}
+				}
 				else {
 					GvSnapItem item = buildSnapItem(line, tokens);
 					if(item!=null) {
@@ -342,7 +347,7 @@ public class GvData {
 				}
 			}
 			for(GvPanel panel : hookSet) {
-				panel.updateData();
+				panel.updateData(false);
 			}
 		}
 	}

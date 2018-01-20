@@ -96,8 +96,13 @@ public class GvPanel extends JPanel implements ActionListener {
 		jf.setVisible(true);
 		return panel;
 	}
-	void updateData() {
-		timer.restart();
+	void updateData(boolean asap) {
+		if(asap) {
+			actionPerformed(null);
+		}
+		else {
+			timer.restart();
+		}
 	}
 	GvPanel(JFrame jf, GvData data) throws IOException {
 		final GvPanel self = this;
