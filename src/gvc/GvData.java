@@ -28,7 +28,7 @@ import java.util.TreeMap;
 import javax.imageio.ImageIO;
 
 public class GvData {
-	private final static Charset utf8 = Charset.forName("UTF-8");
+	private static Charset charset = Charset.forName("UTF-8");
 	private final Map<Double, List<Long>> snapMap;
 	private final RandomAccessFile raf;
 	private final Socket socket;
@@ -59,6 +59,9 @@ public class GvData {
 	private int rafEnd = 0;
 	private boolean rafEof = false;
 	private boolean rafRF = false;
+	public static void setCharset(String charset_) {
+		charset = Charset.forName(charset_);
+	}
 	private static GvSnapItem buildSnapItem(String line, String[] tokens) throws IOException {
 		if(1<=tokens.length) {
 			String type = tokens[0];
@@ -208,7 +211,7 @@ public class GvData {
 		if(si==rafEnd && rafEof) {
 			return null;
 		}
-		String ret =  new String(rafBuf, si, i-si);
+		String ret =  new String(rafBuf, si, i-si, charset);
 		return ret;
 	}
 	public void hook(GvPanel panel) {
@@ -317,10 +320,10 @@ public class GvData {
 						nowTime = Math.max(0, maxTime + 1);
 					}
 					raf.seek(nowPos);
-					raf.write(line.getBytes(utf8));
-					raf.write("\n".getBytes(utf8));
+					raf.write(line.getBytes(charset));
+					raf.write("\n".getBytes(charset));
 					nowPos = raf.getFilePointer();
-					raf.write("n\n".getBytes(utf8));
+					raf.write("n\n".getBytes(charset));
 					nowBeginPos = null;
 				}
 				else if("f".equals(type)) {//flush
@@ -340,10 +343,10 @@ public class GvData {
 						maxY = Math.max(maxY, item.getMaxY());
 					}
 					raf.seek(nowPos);
-					raf.write(line.getBytes(utf8));
-					raf.write("\n".getBytes(utf8));
+					raf.write(line.getBytes(charset));
+					raf.write("\n".getBytes(charset));
 					nowPos = raf.getFilePointer();
-					raf.write("n\n".getBytes(utf8));
+					raf.write("n\n".getBytes(charset));
 				}
 			}
 			for(GvPanel panel : hookSet) {
@@ -365,14 +368,14 @@ public class GvData {
 		snapMap = new TreeMap<Double, List<Long>>();
 		raf = new RandomAccessFile(File.createTempFile("gvsocket_", ".gv"), "rw");
 		this.socket = socket;
-		this.writer = new BufferedWriter(new OutputStreamWriter(socket!=null ? socket.getOutputStream() : System.out));
+		this.writer = new BufferedWriter(new OutputStreamWriter(socket!=null ? socket.getOutputStream() : System.out, charset));
 		rollbackAll();
 		final GvData self = this;
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				try {
-					BufferedReader reader = new BufferedReader(new InputStreamReader(socket!=null ? socket.getInputStream() : System.in));
+					BufferedReader reader = new BufferedReader(new InputStreamReader(socket!=null ? socket.getInputStream() : System.in, charset));
 					while(true) {
 						String line = reader.readLine();
 						if(line==null) {

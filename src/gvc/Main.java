@@ -11,35 +11,85 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Main {
-
 	public static void main(String[] args) throws IOException {
-		if(1<=args.length && "-server".equals(args[0])) {
-			ServerSocket server = new ServerSocket(2<=args.length ? Integer.parseInt(args[1]) : 11111);
+		String mode = "file";
+		String ip = "";
+		String port = "";
+		String outputImagePath = "";
+		String charset = "";
+		String inputPath = null;
+		for(String arg : args) {
+			if(ip==null) {
+				ip = arg;
+			}
+			else if(port==null) {
+				port = arg;
+			}
+			else if(outputImagePath==null) {
+				outputImagePath = arg;
+			}
+			else if(charset==null) {
+				charset = arg;
+			}
+			else if("-server".equals(arg)) {
+				mode = "server";
+				port = null;
+				inputPath = "";
+			}
+			else if("-client".equals(arg)) {
+				mode = "client";
+				ip = null;
+				port = null;
+				inputPath = "";
+			}
+			else if("-pipe".equals(arg)) {
+				mode = "pipe";
+				inputPath = "";
+			}
+			else if("-image".equals(arg)) {
+				mode = "image";
+				outputImagePath = null;
+			}
+			else if("-charset".equals(arg)) {
+				charset = null;
+			}
+			else if(inputPath==null) {
+				inputPath = arg;
+			}
+			else {
+				assert false : "Too many args...";
+			}
+		}
+		if(charset!=null && !"".equals(charset)) {
+			GvData.setCharset(charset);
+		}
+		if("server".equals(mode)) {
+			ServerSocket server = new ServerSocket(port==null ? 11111 : Integer.parseInt(port));
 			while(true) {
 				Socket socket = server.accept();
 				GvData data = new GvData(socket);
 				GvPanel.newWindow(data);
 			}
 		}
-		else if(2<=args.length && "-client".equals(args[0])) {
-			Socket socket = new Socket(args[1], 3<=args.length ? Integer.parseInt(args[2]) : 11112);
+		else if("client".equals(mode)) {
+			Socket socket = new Socket(ip==null ? "127.0.0.1" : ip, port==null ? 11112 : Integer.parseInt(port));
 			GvData data = new GvData(socket);
 			GvPanel.newWindow(data);
 		}
-		else if(1<=args.length && "-pipe".equals(args[0])) {
+		else if("pipe".equals(mode)) {
 			GvData data = new GvData((Socket)null);
 			GvPanel.newWindow(data);
 		}
-		else if(1<=args.length && "-image".equals(args[0])) {
-			String name = 2<=args.length ? args[1] : "sample.gv";
+		else if("image".equals(mode)) {
+			String name = (inputPath==null ? "sample.gv" : inputPath);
 			GvData data = new GvData(name);
 			if(name.endsWith(".gv")) {
 				name = name.substring(0, name.length()-3);
 			}
-			data.outputImage(3<=args.length ? args[2] : name, 1024, 1024);
+			data.outputImage(outputImagePath==null ? name : outputImagePath, 1024, 1024);
 		}
 		else {
-			GvData data = new GvData(1<=args.length ? args[0] : "sample.gv");
+			GvData data = new GvData(inputPath==null ? "sample.gv" : inputPath);
 			GvPanel.newWindow(data);
 		}
 	}
