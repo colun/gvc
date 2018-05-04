@@ -34,4 +34,11 @@ public class GvSnapItem_Output implements GvSnapItem {
 	public void output() {
 		System.err.println(output);
 	}
+	@Override
+	public void addInputLink(String inputLink) {
+	}
+	@Override
+	public String getInputLink(double x, double y) {
+		return null;
+	}
 }

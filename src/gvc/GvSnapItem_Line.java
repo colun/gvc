@@ -45,4 +45,11 @@ public class GvSnapItem_Line implements GvSnapItem {
 	@Override
 	public void output() {
 	}
+	@Override
+	public void addInputLink(String inputLink) {
+	}
+	@Override
+	public String getInputLink(double x, double y) {
+		return null;
+	}
 }

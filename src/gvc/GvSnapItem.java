@@ -15,5 +15,6 @@ public interface GvSnapItem {
 	double getMaxY();
 	void paint(GvGraphics g, double scale);
 	void output();
-
+	void addInputLink(String inputLink);
+	String getInputLink(double x, double y);
 }

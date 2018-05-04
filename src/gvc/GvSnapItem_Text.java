@@ -23,6 +23,7 @@ public class GvSnapItem_Text implements GvSnapItem {
 	double r;
 	String text;
 	int align;
+	String inputLink = null;
 	public GvSnapItem_Text(double x, double y, int color, double r, String text, int align) {
 		this.x = x;
 		this.y = y;
@@ -109,5 +110,20 @@ public class GvSnapItem_Text implements GvSnapItem {
 	}
 	@Override
 	public void output() {
+	}
+	@Override
+	public void addInputLink(String inputLink) {
+		this.inputLink = inputLink;
+	}
+	@Override
+	public String getInputLink(double x, double y) {
+		if(inputLink==null) {
+			return null;
+		}
+		//TODO
+		double dx = this.x-x;
+		double dy = this.y-y;
+		double rr = r*r;
+		return (dx*dx<=rr && dy*dy<=rr) ? inputLink : null;
 	}
 }

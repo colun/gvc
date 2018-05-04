@@ -21,6 +21,7 @@ public class GvSnapItem_Image implements GvSnapItem {
 	BufferedImage image;
 	char mode;
 	boolean backgroundFlag;
+	String inputLink = null;
 	static TreeMap<String, BufferedImage> cache = new TreeMap<String, BufferedImage>();
 	public GvSnapItem_Image(double x, double y, double width, double height, String[] imageInfo) throws IOException {
 		this.x = x;
@@ -136,5 +137,16 @@ public class GvSnapItem_Image implements GvSnapItem {
 	}
 	@Override
 	public void output() {
+	}
+	@Override
+	public void addInputLink(String inputLink) {
+		this.inputLink = inputLink;
+	}
+	@Override
+	public String getInputLink(double x, double y) {
+		if(inputLink==null) {
+			return null;
+		}
+		return this.x<=x && x<this.x+width && this.y<=y && y<this.y+this.height ? inputLink : null;
 	}
 }

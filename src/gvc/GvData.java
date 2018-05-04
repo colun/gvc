@@ -8,6 +8,7 @@ package gvc;
 
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
+import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.LinkedList;
 
 import javax.imageio.ImageIO;
 
@@ -34,6 +36,7 @@ public class GvData {
 	private final Socket socket;
 	private final BufferedWriter writer;
 	private final Set<GvPanel> hookSet = new HashSet<GvPanel>();
+	private final LinkedList<String> reserveInputQueue = new LinkedList<String>();
 	private double minX;
 	private double minY;
 	private double maxX;
@@ -51,6 +54,8 @@ public class GvData {
 	private double savedTime;
 	private double nowTime;
 	private int inputCount = 0;
+	private int reserveInputCount = 0;
+	private int inputKeyboardFlags = 0;
 	private int autoModeCount = 0;
 
 	private byte[] rafBuf = new byte[65536];
@@ -261,13 +266,112 @@ public class GvData {
 		}
 		raf.close();
 	}
-	public void sendInput(double time, double x, double y) throws IOException {
+	private String toStringMouseEvent(String str, double time, double x, double y) {
+		if(str!=null) {
+			return String.format("k %f %s\n", time, str);
+		}
+		return String.format("%f %f %f\n", time, x, y);
+	}
+	public int eventMouse(GvSnap snap, double x, double y, int kind) throws IOException {
 		synchronized (this) {
-			if(0<inputCount) {
-				writer.write(String.format("%f %f %f\n", time, x, y));
-				writer.flush();
-				--inputCount;
+			String str = null;
+			boolean flag = true;
+			if(kind==1) {
+				if(0<inputCount) {
+					flag = false;
+					str = snap.getInputLink(x, y);
+					writer.write(toStringMouseEvent(str, snap.time, x, y));
+					writer.flush();
+					--inputCount;
+				}
+				else if(reserveInputQueue.size()<reserveInputCount) {
+					flag = false;
+					str = snap.getInputLink(x, y);
+					reserveInputQueue.add(toStringMouseEvent(str, snap.time, x, y));
+				}
 			}
+			if(0<inputCount || reserveInputQueue.size()<reserveInputCount) {
+				if(flag) {
+					str = snap.getInputLink(x, y);
+				}
+				return str==null ? 1 : 2;
+			}
+			return 0;
+		}
+	}
+	public boolean eventKeyboard(double time, int keyCode, char keyChar) throws IOException {
+		synchronized (this) {
+			if(0<inputCount || reserveInputQueue.size()<reserveInputCount) {
+				String str = null;
+				if(KeyEvent.VK_A<=keyCode && keyCode<=KeyEvent.VK_Z) {
+					if((inputKeyboardFlags & 1)!=0) {
+						str = String.format("%c", keyChar);
+					}
+				}
+				else if(KeyEvent.VK_0<=keyCode && keyCode<=KeyEvent.VK_9) {
+					if((inputKeyboardFlags & 2)!=0) {
+						str = String.format("%c", keyChar);
+					}
+				}
+				else if(KeyEvent.VK_NUMPAD0<=keyCode && keyCode<=KeyEvent.VK_NUMPAD9) {
+					if((inputKeyboardFlags & 4)!=0) {
+						str = String.format("%c", keyChar);
+					}
+				}
+				else if(keyCode==KeyEvent.VK_SPACE) {
+					if((inputKeyboardFlags & 8)!=0) {
+						str = " ";
+					}
+				}
+				else if(keyCode==KeyEvent.VK_LEFT) {
+					if((inputKeyboardFlags & 0x100)!=0) {
+						str = "left";
+					}
+				}
+				else if(keyCode==KeyEvent.VK_RIGHT) {
+					if((inputKeyboardFlags & 0x100)!=0) {
+						str = "right";
+					}
+				}
+				else if(keyCode==KeyEvent.VK_UP) {
+					if((inputKeyboardFlags & 0x100)!=0) {
+						str = "up";
+					}
+				}
+				else if(keyCode==KeyEvent.VK_DOWN) {
+					if((inputKeyboardFlags & 0x100)!=0) {
+						str = "down";
+					}
+				}
+				else if(keyCode==KeyEvent.VK_ENTER) {
+					if((inputKeyboardFlags & 0x200)!=0) {
+						str = "enter";
+					}
+				}
+				else if(keyCode==KeyEvent.VK_DELETE) {
+					if((inputKeyboardFlags & 0x400)!=0) {
+						str = "delete";
+					}
+				}
+				else if(keyCode==KeyEvent.VK_BACK_SPACE) {
+					if((inputKeyboardFlags & 0x800)!=0) {
+						str = "backspace";
+					}
+				}
+				if(str!=null) {
+					String line = String.format("k %f %s\n", time, str);
+					if(0<inputCount) {
+						writer.write(line);
+						writer.flush();
+						--inputCount;
+					}
+					else if(reserveInputQueue.size()<reserveInputCount) {
+						reserveInputQueue.add(line);
+					}
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 	public int getAutoModeCount() {
@@ -294,7 +398,73 @@ public class GvData {
 					rollbackAll();
 				}
 				else if("i".equals(type)) {//input
-					++inputCount;
+					if(!reserveInputQueue.isEmpty()) {
+						writer.write(reserveInputQueue.removeFirst());
+						writer.flush();
+					}
+					else {
+						++inputCount;
+					}
+				}
+				else if("ip".equals(type)) {//input peek
+					if(!reserveInputQueue.isEmpty()) {
+						writer.write(reserveInputQueue.removeFirst());
+						writer.flush();
+					}
+					else {
+						writer.write("\n");
+						writer.flush();
+					}
+				}
+				else if("il".equals(type)) {//input link
+					raf.seek(nowPos);
+					raf.write(line.getBytes(charset));
+					raf.write("\n".getBytes(charset));
+					nowPos = raf.getFilePointer();
+					raf.write("n\n".getBytes(charset));
+				}
+				else if("ir".equals(type)) {//input reserve
+					if(2<=tokens.length) {
+						reserveInputCount = Integer.parseInt(tokens[1]);
+					}
+					else {
+						reserveInputCount = 10;
+					}
+				}
+				else if("ik".equals(type)) {//input keyboard
+					for(int i=1; i<tokens.length; ++i) {
+						String arg = tokens[i];
+						if("clear".equals(arg)) {
+							inputKeyboardFlags = 0;
+						}
+						else if("alphabet".equals(arg)) {
+							inputKeyboardFlags |= 1;
+						}
+						else if("number".equals(arg)) {
+							inputKeyboardFlags |= 6;
+						}
+						else if("space".equals(arg)) {
+							inputKeyboardFlags |= 8;
+						}
+						else if("graphic".equals(arg)) {
+							inputKeyboardFlags |= 0xff;
+						}
+						else if("cursor".equals(arg)) {
+							inputKeyboardFlags |= 0x100;
+						}
+						else if("enter".equals(arg)) {
+							inputKeyboardFlags |= 0x200;
+						}
+						else if("delete".equals(arg)) {
+							inputKeyboardFlags |= 0x400;
+						}
+						else if("backspace".equals(arg)) {
+							inputKeyboardFlags |= 0x800;
+						}
+						else if("all".equals(arg)) {
+							inputKeyboardFlags = 0xffffffff;
+						}
+					}
 				}
 				else if("a".equals(type)) {//input
 					++autoModeCount;
@@ -461,6 +631,11 @@ public class GvData {
 						String type = tokens[0];
 						if("n".equals(type)) {//new
 							break;
+						}
+						else if("il".equals(type)) {//input link
+							if(2<=tokens.length) {
+								result.addInputLink(line.substring(3));
+							}
 						}
 						else {
 							GvSnapItem item = buildSnapItem(line, tokens);

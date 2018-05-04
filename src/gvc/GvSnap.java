@@ -40,5 +40,21 @@ public class GvSnap {
 		}
 		System.err.println("</time>");
 	}
-
+	public void addInputLink(String inputLink) {
+		int sz = items.size();
+		if(1<=sz) {
+			items.get(sz-1).addInputLink(inputLink);
+		}
+	}
+	public String getInputLink(double x, double y) {
+		int i = items.size();
+		while(1<=i) {
+			--i;
+			String ret = items.get(i).getInputLink(x, y);
+			if(ret!=null) {
+				return ret;
+			}
+		}
+		return null;
+	}
 }

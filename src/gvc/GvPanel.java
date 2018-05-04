@@ -20,6 +20,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.Cursor;
 import java.io.IOException;
 
 import javax.swing.JFrame;
@@ -46,6 +47,7 @@ public class GvPanel extends JPanel implements ActionListener {
 	int mouseY = 0;
 	boolean autoMode = false;
 	int autoModeCount = 0;
+	int oldCursorKind = -1;
 	Timer timer = new Timer(100, this);
 	Timer autoModeTimer = new Timer(200, new ActionListener() {
 		@Override
@@ -117,13 +119,22 @@ public class GvPanel extends JPanel implements ActionListener {
 			}
 			@Override
 			public void keyReleased(KeyEvent arg0) {
-				
 			}
 			@Override
 			public void keyPressed(KeyEvent arg0) {
 				int keyCode = arg0.getKeyCode();
 				char keyChar = arg0.getKeyChar();
-				if(keyCode==KeyEvent.VK_LEFT) {
+				boolean keyInputResult = false;
+				try {
+					if(nowSnap!=null) {
+						keyInputResult = self.data.eventKeyboard(nowSnap.time, keyCode, keyChar);
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				if(keyInputResult) {
+				}
+				else if(keyCode==KeyEvent.VK_LEFT) {
 					try {
 						self.onLeftKey();
 					} catch (IOException e) {
@@ -490,8 +501,18 @@ public class GvPanel extends JPanel implements ActionListener {
 			}
 		}
 		double time = nowSnap.time;
-		if(shiftClick) {
-			data.sendInput(time, cursorX, cursorY);
+		int cursorKind = data.eventMouse(nowSnap, cursorX, cursorY, shiftClick ? 1 : 0);
+		if(oldCursorKind!=cursorKind) {
+			if(cursorKind==1) {
+				setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
+			}
+			else if(cursorKind==2) {
+				setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+			}
+			else {
+				setCursor(Cursor.getDefaultCursor());
+			}
+			oldCursorKind = cursorKind;
 		}
 		if(0<=mouseX && 0<=mouseY && nowSnap.minX<=cursorX && cursorX<=nowSnap.maxX && nowSnap.minY<=cursorY && cursorY<=nowSnap.maxY) {
 			jf.setTitle(String.format("time %f ( %d / %d ) (%d, %d) (%f, %f)", time, now+1, timeList.length, (int)(cursorX+0.5), (int)(cursorY+0.5), cursorX, cursorY));

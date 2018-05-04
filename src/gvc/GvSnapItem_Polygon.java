@@ -15,6 +15,7 @@ public class GvSnapItem_Polygon implements GvSnapItem {
 	int[] iy;
 	Color color;
 	double r;
+	String inputLink = null;
 	public GvSnapItem_Polygon(double[] x, double[] y, int color) {
 		assert(2<=x.length);
 		assert(x.length==y.length);
@@ -79,5 +80,37 @@ public class GvSnapItem_Polygon implements GvSnapItem {
 	}
 	@Override
 	public void output() {
+	}
+	@Override
+	public void addInputLink(String inputLink) {
+		this.inputLink = inputLink;
+	}
+	@Override
+	public String getInputLink(double x, double y) {
+		if(inputLink==null) {
+			return null;
+		}
+		int count = 0;
+		double ax = this.x[this.x.length-1];
+		double ay = this.y[this.x.length-1];
+		for(int i=0; i<this.x.length; ++i) {
+			double bx = this.x[i];
+			double by = this.y[i];
+			if(ay!=by) {
+				if(ay<by) {
+					if(ay<=y && y<by && (y-ay)*(bx-ax) < (x-ax)*(by-ay)) {
+						++count;
+					}
+				}
+				else {
+					if(by<=y && y<ay && (y-by)*(ax-bx) < (x-bx)*(ay-by)) {
+						++count;
+					}
+				}
+			}
+			ax = bx;
+			ay = by;
+		}
+		return (count&1)==1 ? inputLink : null;
 	}
 }
