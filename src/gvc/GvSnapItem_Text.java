@@ -11,6 +11,7 @@ import java.awt.Font;
 import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.BasicStroke;
+import java.awt.Graphics2D;
 import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.AffineTransform;
@@ -21,6 +22,7 @@ public class GvSnapItem_Text implements GvSnapItem {
 	Color color;
 	Color color2;
 	double r;
+	double xr;
 	String text;
 	int align;
 	String inputLink = null;
@@ -51,17 +53,18 @@ public class GvSnapItem_Text implements GvSnapItem {
 		this.r = r;
 		this.text = text;
 		this.align = align;
+		this.xr = r;
 	}
 	@Override
 	public double getMinX() {
 		if(align==0) {
-			return x-r;
+			return x-xr;
 		}
 		else if(0<align) {
 			return x;
 		}
 		else {
-			return x-r*2;
+			return x-xr*2;
 		}
 	}
 	@Override
@@ -71,10 +74,10 @@ public class GvSnapItem_Text implements GvSnapItem {
 	@Override
 	public double getMaxX() {
 		if(align==0) {
-			return x+r;
+			return x+xr;
 		}
 		else if(0<align) {
-			return x+r*2;
+			return x+xr*2;
 		}
 		else {
 			return x;
@@ -83,6 +86,12 @@ public class GvSnapItem_Text implements GvSnapItem {
 	@Override
 	public double getMaxY() {
 		return y+r;
+	}
+	@Override
+	public void updateRect(Graphics2D g) {
+		Font font = new Font(null, Font.CENTER_BASELINE, (int)100);
+		Rectangle2D rect = font.getStringBounds(text, g.getFontRenderContext());
+		xr = (rect.getMaxX() - rect.getMinX()) * 0.005;
 	}
 	@Override
 	public void paint(GvGraphics g, double scale) {

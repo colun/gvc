@@ -7,6 +7,7 @@
 package gvc;
 
 import java.awt.Color;
+import java.awt.Graphics2D;
 
 public class GvSnapItem_Polygon implements GvSnapItem {
 	double[] x;
@@ -64,6 +65,9 @@ public class GvSnapItem_Polygon implements GvSnapItem {
 			maxY = Math.max(maxY, y[i]);
 		}
 		return maxY;
+	}
+	@Override
+	public void updateRect(Graphics2D g) {
 	}
 	@Override
 	public void paint(GvGraphics g, double scale) {

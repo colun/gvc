@@ -7,6 +7,7 @@
 package gvc;
 
 import java.awt.Color;
+import java.awt.Graphics2D;
 
 public class GvSnapItem_Circle implements GvSnapItem {
 	double x;
@@ -35,6 +36,9 @@ public class GvSnapItem_Circle implements GvSnapItem {
 	@Override
 	public double getMaxY() {
 		return y+r;
+	}
+	@Override
+	public void updateRect(Graphics2D g) {
 	}
 	@Override
 	public void paint(GvGraphics g, double scale) {

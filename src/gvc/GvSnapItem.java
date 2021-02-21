@@ -6,6 +6,7 @@
  */
 package gvc;
 
+import java.awt.Graphics2D;
 
 public interface GvSnapItem {
 
@@ -13,6 +14,7 @@ public interface GvSnapItem {
 	double getMinY();
 	double getMaxX();
 	double getMaxY();
+	void updateRect(Graphics2D g);
 	void paint(GvGraphics g, double scale);
 	void output();
 	void addInputLink(String inputLink);

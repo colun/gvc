@@ -7,6 +7,7 @@
 package gvc;
 
 import java.awt.image.BufferedImage;
+import java.awt.Graphics2D;
 import java.io.File;
 import java.io.IOException;
 import java.util.TreeMap;
@@ -93,6 +94,9 @@ public class GvSnapItem_Image implements GvSnapItem {
 	@Override
 	public double getMaxY() {
 		return backgroundFlag ? -Double.MAX_VALUE : y+height;
+	}
+	@Override
+	public void updateRect(Graphics2D g) {
 	}
 	@Override
 	public void paint(GvGraphics g, double scale) {

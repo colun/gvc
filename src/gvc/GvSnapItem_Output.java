@@ -6,6 +6,8 @@
  */
 package gvc;
 
+import java.awt.Graphics2D;
+
 public class GvSnapItem_Output implements GvSnapItem {
 	public final String output;
 	public GvSnapItem_Output(String output) {
@@ -26,6 +28,9 @@ public class GvSnapItem_Output implements GvSnapItem {
 	@Override
 	public double getMaxY() {
 		return -Double.MAX_VALUE;
+	}
+	@Override
+	public void updateRect(Graphics2D g) {
 	}
 	@Override
 	public void paint(GvGraphics g, double scale) {

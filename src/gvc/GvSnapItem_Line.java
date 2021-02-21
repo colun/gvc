@@ -7,6 +7,7 @@
 package gvc;
 
 import java.awt.Color;
+import java.awt.Graphics2D;
 
 public class GvSnapItem_Line implements GvSnapItem {
 	double x1;
@@ -36,6 +37,9 @@ public class GvSnapItem_Line implements GvSnapItem {
 	@Override
 	public double getMaxY() {
 		return Math.max(y1, y2);
+	}
+	@Override
+	public void updateRect(Graphics2D g) {
 	}
 	@Override
 	public void paint(GvGraphics g, double scale) {

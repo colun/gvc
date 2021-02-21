@@ -9,6 +9,7 @@ package gvc;
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
 import java.awt.event.KeyEvent;
+import java.awt.Graphics2D;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -41,6 +42,8 @@ public class GvData {
 	private double minY;
 	private double maxX;
 	private double maxY;
+	private BufferedImage measureImage;
+	private Graphics2D measureGraphics;
 	private double savedMinX;
 	private double savedMinY;
 	private double savedMaxX;
@@ -507,6 +510,7 @@ public class GvData {
 						if(nowBeginPos==null) {
 							nowBeginPos = nowPos;
 						}
+						item.updateRect(measureGraphics);
 						minX = Math.min(minX, item.getMinX());
 						minY = Math.min(minY, item.getMinY());
 						maxX = Math.max(maxX, item.getMaxX());
@@ -539,6 +543,8 @@ public class GvData {
 		raf = new RandomAccessFile(File.createTempFile("gvsocket_", ".gv"), "rw");
 		this.socket = socket;
 		this.writer = new BufferedWriter(new OutputStreamWriter(socket!=null ? socket.getOutputStream() : System.out, charset));
+		measureImage = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+		measureGraphics = measureImage.createGraphics();
 		rollbackAll();
 		final GvData self = this;
 		new Thread(new Runnable() {
@@ -564,6 +570,8 @@ public class GvData {
 		raf = new RandomAccessFile(path, "r");
 		socket = null;
 		writer = null;
+		measureImage = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+		measureGraphics = measureImage.createGraphics();
 		double maxTime = -Double.MAX_VALUE;
 		double nowTime = 0;
 		Long lastPos = getMyFilePointer();
@@ -597,6 +605,7 @@ public class GvData {
 							lastPos = null;
 							maxTime = Math.max(maxTime, nowTime);
 						}
+						item.updateRect(measureGraphics);
 						miX = Math.min(miX, item.getMinX());
 						miY = Math.min(miY, item.getMinY());
 						mxX = Math.max(mxX, item.getMaxX());
