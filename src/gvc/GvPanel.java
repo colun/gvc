@@ -63,6 +63,13 @@ public class GvPanel extends JPanel implements ActionListener {
 			}
 		}
 	});
+	Timer updateUI_Timer = new Timer(10, new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent arg0) {
+			updateUI_Timer.stop();
+			updateUI();
+		}
+	});
 	static GvPanel newWindow(GvData data) throws IOException {
 		final JFrame jf = new JFrame();
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
@@ -422,6 +429,7 @@ public class GvPanel extends JPanel implements ActionListener {
 			if(autoMode) {
 				autoModeTimer.restart();
 			}
+			updateUI_Timer.restart();
 			return;
 		}
 		nowSnap = null;
