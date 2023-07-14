@@ -29,7 +29,7 @@ public class GvGraphics {
 		nowSx = sx;
 		nowSy = sy;
 		if(image==null || image.getWidth()<width || image.getHeight()<height) {
-			image = new BufferedImage((int)(width*1.2), (int)(height*1.2), BufferedImage.TYPE_INT_ARGB);
+			image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 			g = image.createGraphics();
 			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);

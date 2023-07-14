@@ -6,12 +6,15 @@
  */
 package gvc;
 
+import java.io.File;
 import java.io.IOException;
+import java.lang.Runtime;
+import java.lang.InterruptedException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Main {
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 		String mode = "file";
 		String ip = "";
 		String port = "";
@@ -50,6 +53,10 @@ public class Main {
 				mode = "image";
 				outputImagePath = null;
 			}
+			else if("-sixel".equals(arg)) {
+				mode = "sixel";
+				outputImagePath = null;
+			}
 			else if("-charset".equals(arg)) {
 				charset = null;
 			}
@@ -84,9 +91,21 @@ public class Main {
 			String name = (inputPath==null ? "sample.gv" : inputPath);
 			GvData data = new GvData(name);
 			if(name.endsWith(".gv")) {
-				name = name.substring(0, name.length()-3);
+				name = name.substring(0, name.length()-3) + "-gv";
+				new File(name).mkdirs();
 			}
-			data.outputImage(outputImagePath==null ? name : outputImagePath, 1024, 1024);
+			data.outputImage(outputImagePath==null ? name + "/gv" : outputImagePath, 1024, 1024);
+		}
+		else if("sixel".equals(mode)) {
+			Runtime.getRuntime().addShutdownHook(new Thread(new SaneTTY()));
+			Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", "stty raw -ignbrk brkint isig opost -echo < /dev/tty" }).waitFor();
+			String name = (inputPath==null ? "sample.gv" : inputPath);
+			GvData data = new GvData(name);
+			if(name.endsWith(".gv")) {
+				name = name.substring(0, name.length()-3) + "-gv";
+				new File(name).mkdirs();
+			}
+			data.showSixel(outputImagePath==null ? name + "/gv" : outputImagePath, 1024, 1024);
 		}
 		else {
 			GvData data = new GvData(inputPath==null ? "sample.gv" : inputPath);

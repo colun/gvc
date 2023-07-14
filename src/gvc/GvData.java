@@ -14,6 +14,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
@@ -27,6 +28,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.LinkedList;
+import java.lang.Runtime;
+import java.lang.InterruptedException;
+import java.lang.Process;
 
 import javax.imageio.ImageIO;
 
@@ -672,8 +676,6 @@ public class GvData {
 			double dy = nowSnap.maxY - nowSnap.minY;
 			double maxD = Math.max(dx, dy);
 			double scale;
-			double sx;
-			double sy;
 			if(dx*height < dy*width) {
 				scale = height/dy;
 				width = dx * scale;
@@ -691,6 +693,126 @@ public class GvData {
 			gvGraphics.end(bi.getGraphics());
 			File file = new File(keys.size()==1 ? prefix + ".png" : String.format("%s.%f.png", prefix, d));
 			ImageIO.write(bi, "png", file);
+		}
+	}
+	public void showSixel(String prefix, int maxWidth0, int maxHeight0) throws IOException, InterruptedException {
+		int zoom = 0;
+		GvGraphics gvGraphics = new GvGraphics();
+		double[] timeList = getTimeList();
+		int now = 0;
+		while(true) {
+			int maxWidth = maxWidth0;
+			int maxHeight = maxHeight0;
+			int zoom2 = zoom;
+			while(2<=zoom2) {
+				zoom2 -= 2;
+				maxWidth += maxWidth;
+				maxHeight += maxHeight;
+			}
+			while(zoom2<=-1) {
+				zoom2 += 2;
+				maxWidth >>= 1;
+				maxHeight >>= 1;
+			}
+			if(0<zoom2) {
+				maxWidth += (maxWidth >> 1);
+				maxHeight += (maxHeight >> 1);
+			}
+			double d = timeList[now];
+			GvSnap nowSnap = getSnap(d);
+			if(nowSnap==null) {
+				break;
+			}
+			double width = Math.max(1, maxWidth);
+			double height = Math.max(1, maxHeight);
+			double dx = nowSnap.maxX - nowSnap.minX;
+			double dy = nowSnap.maxY - nowSnap.minY;
+			double maxD = Math.max(dx, dy);
+			double scale;
+			if(dx*height < dy*width) {
+				scale = height/dy;
+				width = dx * scale;
+			}
+			else {
+				scale = width/dx;
+				height = dy * scale;
+			}
+			int intWidth = Math.max((int)Math.ceil(width), 1);
+			int intHeight = Math.max((int)Math.ceil(height), 1);
+
+			File file = new File(timeList.length<=1 ? String.format("%s.%d-%d.png", prefix, intWidth, intHeight) : String.format("%s.%f.%d-%d.png", prefix, d, intWidth, intHeight));
+			if(!file.exists()) {
+				BufferedImage bi = new BufferedImage(intWidth, intHeight, BufferedImage.TYPE_INT_ARGB);
+				gvGraphics.begin(intWidth, intHeight, scale, -nowSnap.minX, -nowSnap.minY);
+				nowSnap.paint(gvGraphics, 256.0);
+				gvGraphics.end(bi.getGraphics());
+				ImageIO.write(bi, "png", file);
+			}
+			//nowSnap.output();
+			Process process = Runtime.getRuntime().exec(new String[] {"img2sixel", file.getPath()});
+			InputStream istream = process.getInputStream();
+			int max_size = 8192;
+			byte[] b = new byte[max_size];
+			while(true) {
+				int size = istream.read(b);
+				if(size<=0) {
+					break;
+				}
+				System.out.write(b, 0, size);
+			}
+			process.waitFor();
+			istream.close();
+			System.out.printf("%d/%d ... %f\n", now+1, timeList.length, d);
+			int mode = 0;
+			while(true) {
+				int inp = System.in.read();
+				if(inp==13 || inp==32) {
+					return;
+				}
+				if(inp==43) {
+					++zoom;
+					break;
+				}
+				if(inp==45) {
+					--zoom;
+					break;
+				}
+				if(mode==0) {
+					if(inp==27) {
+						mode = 1;
+					}
+				}
+				else if(mode==1) {
+					if(inp==27) {
+						return;
+					}
+					else if(inp==91) {
+						mode = 2;
+					}
+					else {
+						mode = 0;
+					}
+				}
+				else if(mode==2) {
+					mode = 0;
+					if(inp==65 && now!=0) {
+						now = Math.max(0, now-20);
+						break;
+					}
+					if(inp==66 && now!=timeList.length-1) {
+						now = Math.min(now+20, timeList.length-1);
+						break;
+					}
+					if(inp==67 && now!=timeList.length-1) {
+						now = Math.min(now+1, timeList.length-1);
+						break;
+					}
+					if(inp==68 && now!=0) {
+						now = Math.max(0, now-1);
+						break;
+					}
+				}
+			}
 		}
 	}
 }
