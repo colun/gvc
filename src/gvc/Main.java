@@ -105,13 +105,12 @@ public class Main {
 			else {
 				data = new GvData(name);
 			}
-			if(name.endsWith(".gv")) {
-				name = name.substring(0, name.length()-3) + "-gv";
-				new File(name).mkdirs();
-			}
+			String tempFolder = "gv-temp-work";
+			new File(tempFolder).mkdirs();
+			new File(tempFolder).deleteOnExit();
 			FileInputStream tty = new FileInputStream("/dev/tty");
 			FileOutputStream ttyOut = new FileOutputStream("/dev/tty");
-			data.showSixel(tty, ttyOut, pipeFlag ? null : name + "/gv", 1024, 1024);
+			data.showSixel(tty, ttyOut, tempFolder + "/gv", 1024, 1024);
 		}
 		else if(pipeFlag) {
 			GvData data = new GvData((Socket)null);

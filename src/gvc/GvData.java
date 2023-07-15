@@ -809,7 +809,8 @@ public class GvData {
 					int intWidth = Math.max((int)Math.ceil(width), 1);
 					int intHeight = Math.max((int)Math.ceil(height), 1);
 
-					File file = new File(prefix==null ? "gv_temp.png" : (timeList.length<=1 ? String.format("%s.%d-%d.png", prefix, intWidth, intHeight) : String.format("%s.%f.%d-%d.png", prefix, time, intWidth, intHeight)));
+					File file = new File(socket!=null ? prefix + "-temp.png" : (timeList.length<=1 ? String.format("%s.%d-%d.png", prefix, intWidth, intHeight) : String.format("%s.%f.%d-%d.png", prefix, time, intWidth, intHeight)));
+					file.deleteOnExit();
 					if(prefix==null || !file.exists()) {
 						BufferedImage bi = new BufferedImage(intWidth, intHeight, BufferedImage.TYPE_INT_ARGB);
 						gvGraphics.begin(intWidth, intHeight, scale, -nowSnap.minX, -nowSnap.minY);
