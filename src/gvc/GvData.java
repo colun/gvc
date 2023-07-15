@@ -755,13 +755,13 @@ public class GvData {
 				}
 				if(rows!=r) {
 					rows = r;
-					ttyOut.write(String.format("\nterminal size: %d %d\n", rows, cols).getBytes());
 					for(int i=0; i<rows; ++i) {
 						ttyOut.write("\n".getBytes());
 					}
 				}
 			}
 			int timeListSize;
+			double time = -1;
 			synchronized (this) {
 				double[] timeList = getTimeList();
 				timeListSize = timeList.length;
@@ -787,8 +787,8 @@ public class GvData {
 						maxWidth += (maxWidth >> 1);
 						maxHeight += (maxHeight >> 1);
 					}
-					double d = timeList[now];
-					GvSnap nowSnap = getSnap(d);
+					time = timeList[now];
+					GvSnap nowSnap = getSnap(time);
 					if(nowSnap==null) {
 						break;
 					}
@@ -809,7 +809,7 @@ public class GvData {
 					int intWidth = Math.max((int)Math.ceil(width), 1);
 					int intHeight = Math.max((int)Math.ceil(height), 1);
 
-					File file = new File(prefix==null ? "gv_temp.png" : (timeList.length<=1 ? String.format("%s.%d-%d.png", prefix, intWidth, intHeight) : String.format("%s.%f.%d-%d.png", prefix, d, intWidth, intHeight)));
+					File file = new File(prefix==null ? "gv_temp.png" : (timeList.length<=1 ? String.format("%s.%d-%d.png", prefix, intWidth, intHeight) : String.format("%s.%f.%d-%d.png", prefix, time, intWidth, intHeight)));
 					if(prefix==null || !file.exists()) {
 						BufferedImage bi = new BufferedImage(intWidth, intHeight, BufferedImage.TYPE_INT_ARGB);
 						gvGraphics.begin(intWidth, intHeight, scale, -nowSnap.minX, -nowSnap.minY);
@@ -856,7 +856,7 @@ public class GvData {
 					}
 					process.waitFor();
 					istream.close();
-					ttyOut.write(String.format("%d/%d ... %f\n", now+1, timeList.length, d).getBytes());
+					ttyOut.write(String.format("%d/%d ... %f\n", now+1, timeList.length, time).getBytes());
 				}
 			}
 			int mode = 0;
@@ -876,19 +876,34 @@ public class GvData {
 				}
 				int inp = tty.read();
 				//ttyOut.write(String.format("%d\n", inp).getBytes());
-				if(inp==13 || inp==32) {
-					return;
+				if(inp==13) {//エンター
+					eventKeyboard(time, KeyEvent.VK_ENTER, (char)0);
+				}
+				if(inp==32) {//スペース
+					eventKeyboard(time, KeyEvent.VK_SPACE, ' ');
+				}
+				if(inp==127) {//バックスペース
+					eventKeyboard(time, KeyEvent.VK_BACK_SPACE, (char)0);
 				}
 				if(mode==0) {
-					if(inp==27) {
+					if(inp==27) {//ESC
 						mode = 1;
+					}
+					if('A'<=inp && inp<='Z') {
+						eventKeyboard(time, inp - 'A' + KeyEvent.VK_A, (char)inp);
+					}
+					if('a'<=inp && inp<='z') {
+						eventKeyboard(time, inp - 'a' + KeyEvent.VK_A, (char)inp);
+					}
+					if('0'<=inp && inp<='9') {
+						eventKeyboard(time, inp - '0' + KeyEvent.VK_0, (char)inp);
 					}
 				}
 				else if(mode==1) {
-					if(inp==27) {
+					if(inp==27) {//ESC
 						return;
 					}
-					else if(inp==91) {
+					else if(inp==91) {//[
 						mode = 2;
 					}
 					else {
@@ -897,29 +912,52 @@ public class GvData {
 				}
 				else if(mode==2) {
 					mode = 0;
-					if(inp==53 && now!=0) {
-						now = Math.max(0, now-20);
-						break;
+					if(inp==51) {//Del
+						eventKeyboard(time, KeyEvent.VK_DELETE, (char)0);
 					}
-					if(inp==54 && now!=timeListSize-1) {
-						now = Math.min(now+20, timeListSize-1);
-						break;
+					if(inp==53) {//PgUp
+						if(!eventKeyboard(time, KeyEvent.VK_PAGE_UP, (char)0)) {
+							if(now!=0) {
+								now = Math.max(0, now-20);
+								break;
+							}
+						}
 					}
-					if(inp==65) {
-						++zoom;
-						break;
+					if(inp==54) {//PgDn
+						if(!eventKeyboard(time, KeyEvent.VK_PAGE_DOWN, (char)0)) {
+							if(now!=timeListSize-1) {
+								now = Math.min(now+20, timeListSize-1);
+								break;
+							}
+						}
 					}
-					if(inp==66) {
-						--zoom;
-						break;
+					if(inp==65) {//Up
+						if(!eventKeyboard(time, KeyEvent.VK_UP, (char)0)) {
+							++zoom;
+							break;
+						}
 					}
-					if(inp==67 && now!=timeListSize-1) {
-						now = Math.min(now+1, timeListSize-1);
-						break;
+					if(inp==66) {//Down
+						if(!eventKeyboard(time, KeyEvent.VK_DOWN, (char)0)) {
+							--zoom;
+							break;
+						}
 					}
-					if(inp==68 && now!=0) {
-						now = Math.max(0, now-1);
-						break;
+					if(inp==67) {//Right
+						if(!eventKeyboard(time, KeyEvent.VK_RIGHT, (char)0)) {
+							if(now!=timeListSize-1) {
+								now = Math.min(now+1, timeListSize-1);
+								break;
+							}
+						}
+					}
+					if(inp==68) {//Left
+						if(!eventKeyboard(time, KeyEvent.VK_LEFT, (char)0)) {
+							if(now!=0) {
+								now = Math.max(0, now-1);
+								break;
+							}
+						}
 					}
 				}
 			}
