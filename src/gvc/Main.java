@@ -7,6 +7,8 @@
 package gvc;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.Runtime;
 import java.lang.InterruptedException;
@@ -21,6 +23,7 @@ public class Main {
 		String outputImagePath = "";
 		String charset = "";
 		String inputPath = null;
+		boolean pipeFlag = false;
 		for(String arg : args) {
 			if(ip==null) {
 				ip = arg;
@@ -46,7 +49,7 @@ public class Main {
 				inputPath = "";
 			}
 			else if("-pipe".equals(arg)) {
-				mode = "pipe";
+				pipeFlag = true;
 				inputPath = "";
 			}
 			else if("-image".equals(arg)) {
@@ -55,7 +58,6 @@ public class Main {
 			}
 			else if("-sixel".equals(arg)) {
 				mode = "sixel";
-				outputImagePath = null;
 			}
 			else if("-charset".equals(arg)) {
 				charset = null;
@@ -83,10 +85,6 @@ public class Main {
 			GvData data = new GvData(socket);
 			GvPanel.newWindow(data);
 		}
-		else if("pipe".equals(mode)) {
-			GvData data = new GvData((Socket)null);
-			GvPanel.newWindow(data);
-		}
 		else if("image".equals(mode)) {
 			String name = (inputPath==null ? "sample.gv" : inputPath);
 			GvData data = new GvData(name);
@@ -100,12 +98,24 @@ public class Main {
 			Runtime.getRuntime().addShutdownHook(new Thread(new SaneTTY()));
 			Runtime.getRuntime().exec(new String[] { "/bin/sh", "-c", "stty raw -ignbrk brkint isig opost -echo < /dev/tty" }).waitFor();
 			String name = (inputPath==null ? "sample.gv" : inputPath);
-			GvData data = new GvData(name);
+			GvData data;
+			if(pipeFlag) {
+				data = new GvData((Socket)null);
+			}
+			else {
+				data = new GvData(name);
+			}
 			if(name.endsWith(".gv")) {
 				name = name.substring(0, name.length()-3) + "-gv";
 				new File(name).mkdirs();
 			}
-			data.showSixel(outputImagePath==null ? name + "/gv" : outputImagePath, 1024, 1024);
+			FileInputStream tty = new FileInputStream("/dev/tty");
+			FileOutputStream ttyOut = new FileOutputStream("/dev/tty");
+			data.showSixel(tty, ttyOut, pipeFlag ? null : name + "/gv", 1024, 1024);
+		}
+		else if(pipeFlag) {
+			GvData data = new GvData((Socket)null);
+			GvPanel.newWindow(data);
 		}
 		else {
 			GvData data = new GvData(inputPath==null ? "sample.gv" : inputPath);

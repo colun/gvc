@@ -15,6 +15,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
@@ -64,6 +65,7 @@ public class GvData {
 	private int reserveInputCount = 0;
 	private int inputKeyboardFlags = 0;
 	private int autoModeCount = 0;
+	private int streamCount = 0;
 
 	private byte[] rafBuf = new byte[65536];
 	private long rafFP = 0;
@@ -527,6 +529,7 @@ public class GvData {
 					raf.write("n\n".getBytes(charset));
 				}
 			}
+			++streamCount;
 			for(GvPanel panel : hookSet) {
 				panel.updateData(false);
 			}
@@ -695,87 +698,186 @@ public class GvData {
 			ImageIO.write(bi, "png", file);
 		}
 	}
-	public void showSixel(String prefix, int maxWidth0, int maxHeight0) throws IOException, InterruptedException {
+	public void setCursorTTY(OutputStream ttyOut, int rows, int cols) throws IOException {
+		ttyOut.write(String.format("%c[%d;%dH", 27, rows, cols).getBytes());
+	}
+	public int getCursorTTY(InputStream tty, OutputStream ttyOut) throws IOException {
+		ttyOut.write(String.format("%c[6n", 27).getBytes());
+		int mode = 0;
+		int rows = 0;
+		int cols = 0;
+		while(true) {
+			int inp = tty.read();
+			if(mode==0) {
+				if(inp==27) {
+					mode = 1;
+				}
+			}
+			else if(mode==1) {
+				if(inp==91) {
+					mode = 2;
+				}
+			}
+			else if(mode==2) {
+				if(48<=inp && inp<58) {
+					rows = rows * 10 + (inp-48);
+				}
+				if(inp==59) {
+					mode = 3;
+				}
+			}
+			else if(mode==3) {
+				if(48<=inp && inp<58) {
+					cols = cols * 10 + (inp-48);
+				}
+				if(inp==82) {
+					return rows * 65536 + cols;
+				}
+			}
+		}
+	}
+	public void showSixel(InputStream tty, OutputStream ttyOut, String prefix, int maxWidth0, int maxHeight0) throws IOException, InterruptedException {
 		int zoom = 0;
 		GvGraphics gvGraphics = new GvGraphics();
-		double[] timeList = getTimeList();
 		int now = 0;
+		int rows = -1;
+		int cols = -1;
+		int lastWidth = -1;
+		int lastHeight = -1;
 		while(true) {
-			int maxWidth = maxWidth0;
-			int maxHeight = maxHeight0;
-			int zoom2 = zoom;
-			while(2<=zoom2) {
-				zoom2 -= 2;
-				maxWidth += maxWidth;
-				maxHeight += maxHeight;
-			}
-			while(zoom2<=-1) {
-				zoom2 += 2;
-				maxWidth >>= 1;
-				maxHeight >>= 1;
-			}
-			if(0<zoom2) {
-				maxWidth += (maxWidth >> 1);
-				maxHeight += (maxHeight >> 1);
-			}
-			double d = timeList[now];
-			GvSnap nowSnap = getSnap(d);
-			if(nowSnap==null) {
-				break;
-			}
-			double width = Math.max(1, maxWidth);
-			double height = Math.max(1, maxHeight);
-			double dx = nowSnap.maxX - nowSnap.minX;
-			double dy = nowSnap.maxY - nowSnap.minY;
-			double maxD = Math.max(dx, dy);
-			double scale;
-			if(dx*height < dy*width) {
-				scale = height/dy;
-				width = dx * scale;
-			}
-			else {
-				scale = width/dx;
-				height = dy * scale;
-			}
-			int intWidth = Math.max((int)Math.ceil(width), 1);
-			int intHeight = Math.max((int)Math.ceil(height), 1);
-
-			File file = new File(timeList.length<=1 ? String.format("%s.%d-%d.png", prefix, intWidth, intHeight) : String.format("%s.%f.%d-%d.png", prefix, d, intWidth, intHeight));
-			if(!file.exists()) {
-				BufferedImage bi = new BufferedImage(intWidth, intHeight, BufferedImage.TYPE_INT_ARGB);
-				gvGraphics.begin(intWidth, intHeight, scale, -nowSnap.minX, -nowSnap.minY);
-				nowSnap.paint(gvGraphics, 256.0);
-				gvGraphics.end(bi.getGraphics());
-				ImageIO.write(bi, "png", file);
-			}
-			//nowSnap.output();
-			Process process = Runtime.getRuntime().exec(new String[] {"img2sixel", file.getPath()});
-			InputStream istream = process.getInputStream();
-			int max_size = 8192;
-			byte[] b = new byte[max_size];
-			while(true) {
-				int size = istream.read(b);
-				if(size<=0) {
-					break;
+			{
+				setCursorTTY(ttyOut, 127, 127);
+				int packed_size = getCursorTTY(tty, ttyOut);
+				int r = packed_size >> 16;
+				int c = packed_size & 65535;
+				if(cols!=c) {
+					cols = c;
 				}
-				System.out.write(b, 0, size);
+				if(rows!=r) {
+					rows = r;
+					ttyOut.write(String.format("\nterminal size: %d %d\n", rows, cols).getBytes());
+					for(int i=0; i<rows; ++i) {
+						ttyOut.write("\n".getBytes());
+					}
+				}
 			}
-			process.waitFor();
-			istream.close();
-			System.out.printf("%d/%d ... %f\n", now+1, timeList.length, d);
+			int timeListSize;
+			synchronized (this) {
+				double[] timeList = getTimeList();
+				timeListSize = timeList.length;
+				if(timeList.length==0) {
+					ttyOut.write("0/0 ... N/A\n".getBytes());
+				}
+				else {
+					now = Math.min(now, timeList.length-1);
+					int maxWidth = maxWidth0;
+					int maxHeight = maxHeight0;
+					int zoom2 = zoom;
+					while(2<=zoom2) {
+						zoom2 -= 2;
+						maxWidth += maxWidth;
+						maxHeight += maxHeight;
+					}
+					while(zoom2<=-1) {
+						zoom2 += 2;
+						maxWidth >>= 1;
+						maxHeight >>= 1;
+					}
+					if(0<zoom2) {
+						maxWidth += (maxWidth >> 1);
+						maxHeight += (maxHeight >> 1);
+					}
+					double d = timeList[now];
+					GvSnap nowSnap = getSnap(d);
+					if(nowSnap==null) {
+						break;
+					}
+					double width = Math.max(1, maxWidth);
+					double height = Math.max(1, maxHeight);
+					double dx = nowSnap.maxX - nowSnap.minX;
+					double dy = nowSnap.maxY - nowSnap.minY;
+					double maxD = Math.max(dx, dy);
+					double scale;
+					if(dx*height < dy*width) {
+						scale = height/dy;
+						width = dx * scale;
+					}
+					else {
+						scale = width/dx;
+						height = dy * scale;
+					}
+					int intWidth = Math.max((int)Math.ceil(width), 1);
+					int intHeight = Math.max((int)Math.ceil(height), 1);
+
+					File file = new File(prefix==null ? "gv_temp.png" : (timeList.length<=1 ? String.format("%s.%d-%d.png", prefix, intWidth, intHeight) : String.format("%s.%f.%d-%d.png", prefix, d, intWidth, intHeight)));
+					if(prefix==null || !file.exists()) {
+						BufferedImage bi = new BufferedImage(intWidth, intHeight, BufferedImage.TYPE_INT_ARGB);
+						gvGraphics.begin(intWidth, intHeight, scale, -nowSnap.minX, -nowSnap.minY);
+						nowSnap.paint(gvGraphics, 256.0);
+						gvGraphics.end(bi.getGraphics());
+						ImageIO.write(bi, "png", file);
+					}
+					//ttyOut.write(new byte[] { 27, 91, 54, 110 });
+					//nowSnap.output();
+					boolean changedSizeFlag = false;
+					if(lastWidth!=intWidth || lastHeight!=intHeight) {
+						lastWidth = intWidth;
+						lastHeight = intHeight;
+						changedSizeFlag = true;
+					}
+					Process process = Runtime.getRuntime().exec(new String[] {"img2sixel", file.getPath()});
+					InputStream istream = process.getInputStream();
+					int max_size = 8192;
+					byte[] b = new byte[max_size];
+					int size = 0;
+					boolean firstFlag = true;
+					while(true) {
+						int ret = istream.read(b, size, max_size-size);
+						if(0<ret) {
+							size += ret;
+							if(size+size<max_size) {
+								continue;
+							}
+						}
+						if(0<size) {
+							if(firstFlag) {
+								firstFlag = false;
+								setCursorTTY(ttyOut, 1, 1);
+								if(changedSizeFlag) {
+									ttyOut.write(String.format("%c[0J", 27).getBytes());
+								}
+							}
+							ttyOut.write(b, 0, size);
+							size = 0;
+						}
+						if(ret<=0) {
+							break;
+						}
+					}
+					process.waitFor();
+					istream.close();
+					ttyOut.write(String.format("%d/%d ... %f\n", now+1, timeList.length, d).getBytes());
+				}
+			}
 			int mode = 0;
+			int streamCount2;
+			synchronized (this) {
+				streamCount2 = streamCount;
+			}
 			while(true) {
-				int inp = System.in.read();
+				if(tty.available()==0) {
+					synchronized (this) {
+						if(streamCount2!=streamCount) {
+							break;
+						}
+					}
+					Thread.sleep(50);
+					continue;
+				}
+				int inp = tty.read();
+				//ttyOut.write(String.format("%d\n", inp).getBytes());
 				if(inp==13 || inp==32) {
 					return;
-				}
-				if(inp==43) {
-					++zoom;
-					break;
-				}
-				if(inp==45) {
-					--zoom;
-					break;
 				}
 				if(mode==0) {
 					if(inp==27) {
@@ -795,16 +897,24 @@ public class GvData {
 				}
 				else if(mode==2) {
 					mode = 0;
-					if(inp==65 && now!=0) {
+					if(inp==53 && now!=0) {
 						now = Math.max(0, now-20);
 						break;
 					}
-					if(inp==66 && now!=timeList.length-1) {
-						now = Math.min(now+20, timeList.length-1);
+					if(inp==54 && now!=timeListSize-1) {
+						now = Math.min(now+20, timeListSize-1);
 						break;
 					}
-					if(inp==67 && now!=timeList.length-1) {
-						now = Math.min(now+1, timeList.length-1);
+					if(inp==65) {
+						++zoom;
+						break;
+					}
+					if(inp==66) {
+						--zoom;
+						break;
+					}
+					if(inp==67 && now!=timeListSize-1) {
+						now = Math.min(now+1, timeListSize-1);
 						break;
 					}
 					if(inp==68 && now!=0) {
